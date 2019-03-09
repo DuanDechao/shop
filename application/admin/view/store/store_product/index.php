@@ -119,7 +119,7 @@
                                 <a href="javascript:void(0);" class="" onclick="$eb.createModalFrame(this.innerText,'{:Url('edit_content')}?id={{d.id}}')">
                                     <i class="fa fa-pencil"></i> 编辑内容</a>
                             </li>
-                            <li>
+                            <!-- <li>
                                 <a href="javascript:void(0);" onclick="$eb.createModalFrame(this.innerText,'{:Url('ump.store_seckill/seckill')}?id={{d.id}}')"">
                                 <i class="fa fa-gavel"></i> 开启秒杀</a>
                             </li>
@@ -130,7 +130,7 @@
                             <li>
                                 <a href="javascript:void(0);" onclick="$eb.createModalFrame(this.innerText,'{:Url('ump.store_combination/combination')}?id={{d.id}}')">
                                     <i class="fa fa-hand-lizard-o"></i> 开启拼团</a>
-                            </li>
+                            </li> -->
                             <li>
                                 <a href="javascript:void(0);" lay-event='delstor'>
                                     <i class="fa fa-trash"></i> 删除
