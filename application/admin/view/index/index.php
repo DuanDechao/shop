@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="renderer" content="webkit">
     <meta http-equiv="Cache-Control" content="no-siteapp" />
-    <title>CRMEB管理系统</title>
+    <title>后台管理系统</title>
     <!--[if lt IE 9]>
     <meta http-equiv="refresh" content="0;ie.html" />
     <![endif]-->
-    <link rel="shortcut icon" href="/favicon.ico">
+    <!-- <link rel="shortcut icon" href="/favicon.ico"> -->
     <link href="{__FRAME_PATH}css/bootstrap.min.css" rel="stylesheet">
     <link href="{__FRAME_PATH}css/font-awesome.min.css" rel="stylesheet">
     <link href="{__FRAME_PATH}css/animate.min.css" rel="stylesheet">
@@ -26,7 +26,7 @@
                 <li class="nav-header">
                     <div class="dropdown profile-element admin_open">
                         <span>
-                            <img alt="image" class="imgbox" src="{$site_logo}" onerror="javascript:this.src='{__ADMIN_PATH}images/admin_logo.png';"/>
+                            <img alt="image" class="imgbox" src="{$site_logo}" onerror="javascript:this.src='{__ADMIN_PATH}images/admin_logo11.png';"/>
                         </span>
                         <a data-toggle="dropdown" class="dropdown-toggle" href="#">
                             <span class="clear" style="margin-top: 20px;">
@@ -147,7 +147,7 @@
         </div>
         <!--底部版权-->
         <div class="footer"  @touchmove.prevent>
-            <div class="pull-right">© 2014-2018 <a href="http://www.crmeb.com/" target="_blank">CRMEB</a>
+            <div class="pull-right">© 2014-2018 <a href="" target="_blank">FUMIBI</a>
             </div>
         </div>
     </div>
