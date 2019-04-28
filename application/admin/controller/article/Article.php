@@ -25,11 +25,13 @@ class Article extends AuthController
      */
     public function index($pid = 0)
     {
-        $where = Util::getMore([
+        /*$where = Util::getMore([
             ['title',''],
             ['cid','']
-        ],$this->request);
-        $pid = $this->request->param('pid');
+		],$this->request);*/
+		$where['title'] = '';
+		$where['cid'] = '';
+		$pid = $this->request->param('pid');
         $this->assign('where',$where);
         $where['merchant'] = 0;//区分是管理员添加的图文显示  0 还是 商户添加的图文显示  1
         $catlist = ArticleCategoryModel::where('is_del',0)->select()->toArray();
@@ -48,6 +50,7 @@ class Article extends AuthController
 
 
         $this->assign('cate',ArticleCategoryModel::getTierList());
+		$this->assign('cid', $where['cid']);
         $this->assign(ArticleModel::getAll($where));
         return $this->fetch();
     }

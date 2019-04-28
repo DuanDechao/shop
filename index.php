@@ -23,6 +23,7 @@ if(file_exists("./public/install/") && !file_exists("./public/install/install.lo
 // [ 应用入口文件 ]
 // 定义应用目录
 define('APP_PATH', __DIR__ . '/application/');
+define('APP_DEBUG', true);
 //静态文件目录
 define('PUBILC_PATH', '/public/');
 //上传文件目录

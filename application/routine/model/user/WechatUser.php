@@ -40,4 +40,16 @@ class WechatUser extends ModelBasic
         $couponId = SystemConfigService::get('store_order_give_coupon');
         if($couponId) StoreCouponUser::addUserCoupon($uid,$couponId);
     }
+	
+	public static function userFirstSubGiveCoupon($uid)
+    {
+        $couponId = SystemConfigService::get('wechat_first_sub_give_coupon');
+        if($couponId) StoreCouponUser::addUserCoupon($uid,$couponId);
+    }
+	
+	public static function spreaderGiveCoupon($uid)
+    {
+        $couponId = SystemConfigService::get('wechat_spread_user_give_coupon');
+        if($couponId) StoreCouponUser::addUserCoupon($uid,$couponId);
+    }
 }

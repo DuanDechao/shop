@@ -180,3 +180,52 @@ function createPoster($product = array()){
     if(!$res) return false;
     return $filePath;
 }
+
+function getVipLevelConfig()
+{
+	$vipLevelConfig = SystemConfigService::get('vip_level_config');
+	$levelConfig = Array();
+	$vipLevelConfigList = explode('\r\n', $vipLevelConfig);
+	foreach($vipLevelConfigList as $configDetail)
+	{
+		$configDetail = explode(',', $configDetail);
+		if(count($configDetail) != 4)
+			continue;
+		$ruleList = explode('|', $configDetail[2]);
+		$subLevelConfig = Array();
+		$levelId = $configDetail[0];
+		$subLevelConfig['vip_name'] = $configDetail[1];
+		$subLevelConfig['rule'] = Array();
+		foreach($ruleList as $rule)
+		{
+			$opt = '>';
+			if(strpos($rule, '>=') != false) $opt = '>=';
+			if(strpos($rule, '==') != false) $opt = '==';
+			$items = explode($opt, $rule);
+			if(count($items) == 2)
+			{
+				$subLevelConfig['rule'][$items[0]] = ['value'=> $items[1], 'opt'=> $opt];
+			}
+		}
+		$levelConfig[$levelId] = $subLevelConfig;
+	}
+	return $levelConfig;
+}
+
+function updateVipLevel($event, $value)
+{
+	$levelConfig = getVipLevelConfig();
+	$maxLevelId = 0;
+	foreach($levelConfig as $levelId => $config)
+	{
+		if(array_key_exists($event, $config['rule']))
+		{
+			if($config['rule'][$event]['opt'] == '>' && $value <= $config['rule'][$event]['value']) break;
+			if($config['rule'][$event]['opt'] == '>=' && $value < $config['rule'][$event]['value']) break;
+			if($config['rule'][$event]['opt'] == '==' && $value != $config['rule'][$event]['value']) break;
+
+			$maxLevelId = $levelId;
+		}
+	}
+	return $maxLevelId;
+}

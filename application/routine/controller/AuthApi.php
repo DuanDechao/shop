@@ -1,6 +1,7 @@
 <?php
 namespace app\routine\controller;
 
+use think\Log;
 use Api\Express;
 use app\routine\model\routine\RoutineCode;
 use app\routine\model\routine\RoutineFormId;
@@ -48,6 +49,9 @@ use app\routine\model\store\StoreBargain;
 use app\routine\model\store\StoreBargainUser;
 use app\routine\model\store\StoreBargainUserHelp;
 use app\routine\model\article\Article as ArticleModel;
+use app\routine\model\routine\RoutineQrcode;
+use app\routine\model\user\UserBounty;
+use app\routine\model\user\UserRebateApply;
 
 /**
  * 小程序接口
@@ -82,6 +86,10 @@ class AuthApi extends AuthController{
         $extractBank = SystemConfig::getValue('user_extract_bank')?:[];//提现银行
         $extractBank = explode('=',$extractBank);
         return JsonService::successful($extractBank);
+    }
+    public function rebate_apply_platforms(){
+		$platforms = UserRebateApply::getRebateApplyPlatforms();
+        return JsonService::successful(array_keys($platforms));
     }
     /**
      * 首页
@@ -374,6 +382,16 @@ class AuthApi extends AuthController{
 //        $this->userInfo['service_phone_str'] = SystemConfig::getValue('service_phone_str');
         return JsonService::successful($this->userInfo);
     }
+
+	public function get_user_vip_name()
+	{
+		$levelConfig = User::getVipLevelConfig();
+		$res['vip_name'] = '普通会员';
+		if(array_key_exists($this->userInfo['level'], $levelConfig)){
+			$res['vip_name'] = $levelConfig[$this->userInfo['level']]['vip_name'];
+		}
+		return JsonService::successful($res);
+	}
 
 
     /**
@@ -719,14 +737,13 @@ class AuthApi extends AuthController{
         if(!$key) return JsonService::fail('参数错误!');
         if(StoreOrder::be(['order_id|unique'=>$key,'uid'=>$this->userInfo['uid'],'is_del'=>0]))
             return JsonService::status('extend_order','订单已生成',['orderId'=>$key,'key'=>$key]);
-        list($addressId,$couponId,$payType,$useIntegral,$mark,$combinationId,$pinkId,$seckill_id,$formId,$bargainId) = UtilService::postMore([
-            'addressId','couponId','payType','useIntegral','mark',['combinationId',0],['pinkId',0],['seckill_id',0],['formId',''],['bargainId','']
-        ],Request::instance(),true);
+        list($addressId,$couponId,$payType,$useIntegral,$mark,$combinationId,$pinkId,$seckill_id,$formId,$bargainId,$useCondBounty,$useFullBounty) = UtilService::postMore([
+            'addressId','couponId','payType','useIntegral','mark',['combinationId',0],['pinkId',0],['seckill_id',0],['formId',''],['bargainId',''], 'useCondBounty','useFullBounty'],Request::instance(),true);
         $payType = strtolower($payType);
         if($bargainId) StoreBargainUser::setBargainUserStatus($bargainId,$this->userInfo['uid']);//修改砍价状态
         if($pinkId) if(StorePink::getIsPinkUid($pinkId,$this->userInfo['uid'])) return JsonService::status('ORDER_EXIST','订单生成失败，你已经在该团内不能再参加了',['orderId'=>StoreOrder::getStoreIdPink($pinkId,$this->userInfo['uid'])]);
         if($pinkId) if(StoreOrder::getIsOrderPink($pinkId,$this->userInfo['uid'])) return JsonService::status('ORDER_EXIST','订单生成失败，你已经参加该团了，请先支付订单',['orderId'=>StoreOrder::getStoreIdPink($pinkId,$this->userInfo['uid'])]);
-        $order = StoreOrder::cacheKeyCreateOrder($this->userInfo['uid'],$key,$addressId,$payType,$useIntegral,$couponId,$mark,$combinationId,$pinkId,$seckill_id,$bargainId);
+        $order = StoreOrder::cacheKeyCreateOrder($this->userInfo['uid'],$key,$addressId,$payType,$useIntegral,$couponId,$mark,$combinationId,$pinkId,$seckill_id,$bargainId,$this->userInfo['level'],$useCondBounty,$useFullBounty);
         $orderId = $order['order_id'];
         $info = compact('orderId','key');
         if($orderId){
@@ -922,9 +939,9 @@ class AuthApi extends AuthController{
      * @param int $limit
      * @return \think\response\Json
      */
-    public function user_balance_list($first = 0,$limit = 8)
+    public function user_balance_list($category='now_money',$first = 0,$limit = 8)
     {
-        $list = UserBill::where('uid',$this->userInfo['uid'])->where('category','now_money')
+        $list = UserBill::where('uid',$this->userInfo['uid'])->where('category', $category)
             ->field('mark,pm,number,add_time')
             ->where('status',1)->order('add_time DESC')->limit($first,$limit)->select()->toArray();
         foreach ($list as &$v){
@@ -933,6 +950,49 @@ class AuthApi extends AuthController{
         return JsonService::successful($list);
     }
 
+	public function user_balance_count($category = 'now_money')
+	{
+		$res['historySum'] = UserBill::where('uid', $this->userInfo['uid'])->where('category', $category)->where('pm', 1)->sum('number');
+		$res['deductSum'] = UserBill::where('uid', $this->userInfo['uid'])->where('category', $category)->where('pm', 0)->sum('number');
+		$res['desc_id'] = SystemConfigService::get($category.'_desc_article_id'); 
+		return JsonService::successful($res);
+	}
+
+	public function user_bounty_value()
+	{
+		$res['condition_bounty'] = $this->userInfo['register_money'] + $this->userInfo['spread_money'];
+		$res['full_bounty'] = $this->userInfo['distribution_money'] + $this->userInfo['rebate_money'];
+		$res['condition_rule'] = SystemConfigService::get('condition_bounty_use_rule');
+		return JsonService::successful($res);
+	}
+	
+	public function get_level_discount()
+	{
+		$vipLevelConfig = User::getVipLevelConfig();
+		$res['vip_name'] = '普通会员';
+		$res['vip_discount'] = 100;
+		if(array_key_exists($this->userInfo['level'], $vipLevelConfig)){
+			$res['vip_name'] = $vipLevelConfig[$this->userInfo['level']]['vip_name'];
+			$res['vip_discount'] = $vipLevelConfig[$this->userInfo['level']]['discount'];
+		}
+		return JsonService::successful($res);
+	}
+
+	public function user_rebate_apply(Request $request)
+	{
+        $data = UtilService::postMore([
+            ['order_id',''],
+            ['platform',''],
+            ['consume_price',''],
+        ],$request);
+		$list = UserRebateApply::where('order_id', $data['order_id'])->where('platform', $data['platform'])->order('apply_time DESC')->limit(1)->select()->toArray();
+		if(count($list) > 0 && ($list[0]['uid'] != $this->userInfo['uid'] || $list[0]['state'] != 2)){
+			return JsonService::fail("重复申请");
+		}
+		$res = UserRebateApply::applyRebate($this->userInfo['uid'], $data['order_id'], $data['platform'], $data['consume_price']);	
+		if($res) return JsonService::successful("申请成功");
+		else return JsonService::fail("申请失败");
+	}
     /**
      * 积分使用记录
      * @param int $first
@@ -1343,6 +1403,27 @@ class AuthApi extends AuthController{
         $sum = array_sum($price);
         return JsonService::successful(['cont'=>$cont,'sum'=>$sum]);
     }
+	
+	public function rebateApplylist($first = 0, $limit = 8)
+	{
+        $request = Request::instance();
+        $lists=$request->param();
+        $status = $lists['status'];
+        $platform = $lists['platform'];
+		$res = UserRebateApply::getRebateApplyList($this->userInfo['uid'], $status, $platform, $first, $limit);
+        return JsonService::successful($res);
+    }
+
+	public function rebateApplyStatistics()
+	{
+		$res['pass_count'] = count(UserRebateApply::where('uid', $this->userInfo['uid'])->where('state', 1)->select()->toArray());
+		$res['rebate_bounty'] = UserBill::where('uid', $this->userInfo['uid'])->where('category', 'rebate_money')->where('pm', 1)->sum('number');
+        //$platformOptions = SystemConfigService::get('rebate_apply_platform');
+		//$platformOptions = str_replace("\r\n", "\n", $platformOptions);
+		$platforms = UserRebateApply::getRebateApplyPlatforms();
+		$res['platforms'] = array_keys($platforms);
+        return JsonService::successful($res);
+	}
     /*
    * 昨日推广佣金
    */
@@ -1429,7 +1510,8 @@ class AuthApi extends AuthController{
     public  function get_code(){
         header('content-type:image/jpg');
         if(!$this->userInfo['uid']) return JsonService::fail('授权失败，请重新授权');
-        $path = makePathToUrl('routine/code');
+        //$path = makePathToUrl('routine/code');
+		$path = 'public'.DS.'uploads'.DS.'codepath'.DS.'spreader';
         if($path == '')
             return JsonService::fail('生成上传目录失败,请检查权限!');
         $picname = $path.DS.$this->userInfo['uid'].'.jpg';
@@ -1454,9 +1536,15 @@ class AuthApi extends AuthController{
         $data = UtilService::postMore(['spread_uid',0],$request);
         if($data['spread_uid']){
             if(!$this->userInfo['spread_uid']){
-                $res = User::edit(['spread_uid'=>$data['spread_uid']],$this->userInfo['uid']);
-                if($res) return JsonService::successful('绑定成功');
-                else return JsonService::successful('绑定失败');
+				$info = RoutineQrcode::getRoutineQrcodeFindType($data['spread_uid']);
+				if($info){
+					$res = User::edit(['spread_uid'=>$info['third_id']], $this->userInfo['uid']);
+					if($res){
+						UserBounty::giveUserBindSpreaderBounty($this->userInfo['uid'], $info['third_id']);
+						return JsonService::successful('绑定成功');
+					}
+				}
+                return JsonService::successful('绑定失败');
             }else return JsonService::fail('已存在被推荐人');
         }else return JsonService::fail('没有推荐人');
     }

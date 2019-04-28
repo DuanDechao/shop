@@ -15,11 +15,11 @@ return [
     // 服务器地址
     'hostname'        => 'localhost',
     // 数据库名
-    'database'        => 'demo25xcx_crmeb',
+    'database'        => 'crmeb_test',
     // 用户名
-    'username'        => 'demo25xcx_crmeb',
+    'username'        => 'root',
     // 密码
-    'password'        => 'zBerrkhQWAYx6i2Q',
+    'password'        => '5F7b58ce2c3d',
 
     // 端口
     'hostport'        => '3306',

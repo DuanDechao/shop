@@ -45,6 +45,7 @@ class RoutineUser extends ModelBasic
             }
         }
         //  判断unionid  存在根据unionid判断
+		$is_new_user = 0;
         if($routineInfo['unionid'] != '' && WechatUser::be(['unionid'=>$routineInfo['unionid']])){
             WechatUser::edit($routineInfo,$routineInfo['unionid'],'unionid');
             $uid = WechatUser::where('unionid',$routineInfo['unionid'])->value('uid');
@@ -59,10 +60,13 @@ class RoutineUser extends ModelBasic
             if(User::isUserSpread($spid)) {
                 $res = User::setRoutineUser($routineInfo,$spid); //用户上级
             }else $res = User::setRoutineUser($routineInfo);
-            $uid = $res->uid;
+			$uid = $res->uid;
+			$is_new_user = 1;
         }
         $data['page'] = $page;
         $data['uid'] = $uid;
+		$data['spid'] = $spid;
+		$data['is_new_user'] = $is_new_user;
         return $data;
     }
 

@@ -5,6 +5,8 @@ namespace app\routine\controller;
 use app\admin\model\system\SystemConfig;
 use app\routine\model\routine\RoutineServer;
 use app\routine\model\user\RoutineUser;
+use app\routine\model\user\WechatUser;
+use app\routine\model\user\UserBounty;
 use service\JsonService;
 use service\UtilService;
 use think\Controller;
@@ -33,7 +35,14 @@ class Login extends Controller{
         $dataOauthInfo = RoutineUser::routineOauth($data);
         $data['uid'] = $dataOauthInfo['uid'];
         $data['page'] = $dataOauthInfo['page'];
+		$data['is_new_user'] = $dataOauthInfo['is_new_user'];
+		$data['spid'] = $dataOauthInfo['spid'];
         $data['status'] = RoutineUser::isUserStatus($data['uid']);
+		if($data['is_new_user']){
+			WechatUser::userFirstSubGiveCoupon($data['uid']);
+			if($data['spid'] != 0) WechatUser::spreaderGiveCoupon($data['spid']);
+			UserBounty::giveUserRegisterBounty($data['uid'], $data['spid']);
+		}
         return JsonService::successful($data);
     }
 

@@ -11,6 +11,7 @@ use basic\ModelBasic;
 use service\SystemConfigService;
 use think\Request;
 use think\Session;
+use think\Log;
 use traits\ModelTrait;
 
 /**
@@ -110,8 +111,8 @@ class User extends ModelBasic
         if($brokeragePrice <= 0) return true;
         $mark = $userInfo['nickname'].'成功消费'.floatval($orderInfo['pay_price']).'元,奖励推广佣金'.floatval($brokeragePrice);
         self::beginTrans();
-        $res1 = UserBill::income('获得推广佣金',$userInfo['spread_uid'],'now_money','brokerage',$brokeragePrice,$orderInfo['id'],0,$mark);
-        $res2 = self::bcInc($userInfo['spread_uid'],'now_money',$brokeragePrice,'uid');
+        $res1 = UserBill::income('获得推广佣金',$userInfo['spread_uid'],'distribution_money','brokerage',$brokeragePrice,$orderInfo['id'],0,$mark);
+        $res2 = self::bcInc($userInfo['spread_uid'],'distribution_money',$brokeragePrice,'uid');
         $res = $res1 && $res2;
         self::checkTrans($res);
         if($res) self::backOrderBrokerageTwo($orderInfo);
@@ -139,10 +140,62 @@ class User extends ModelBasic
         if($brokeragePrice <= 0) return true;
         $mark = '二级推广人'.$userInfo['nickname'].'成功消费'.floatval($orderInfo['pay_price']).'元,奖励推广佣金'.floatval($brokeragePrice);
         self::beginTrans();
-        $res1 = UserBill::income('获得推广佣金',$userInfoTwo['spread_uid'],'now_money','brokerage',$brokeragePrice,$orderInfo['id'],0,$mark);
-        $res2 = self::bcInc($userInfoTwo['spread_uid'],'now_money',$brokeragePrice,'uid');
+        $res1 = UserBill::income('获得推广佣金',$userInfoTwo['spread_uid'],'distribution_money','brokerage',$brokeragePrice,$orderInfo['id'],0,$mark);
+        $res2 = self::bcInc($userInfoTwo['spread_uid'],'distribution_money',$brokeragePrice,'uid');
         $res = $res1 && $res2;
         self::checkTrans($res);
         return $res;
     }
+	public static function getVipLevelConfig()
+	{
+		$vipLevelConfig = SystemConfigService::get('vip_level_config');
+		$vipLevelConfig = str_replace("\r\n","\n",$vipLevelConfig);
+		$levelConfig = Array();
+		$vipLevelConfigList = explode("\n", $vipLevelConfig);
+		foreach($vipLevelConfigList as $configDetail)
+		{
+			$configDetail = explode(',', $configDetail);
+			if(count($configDetail) != 4)
+				continue;
+			$ruleList = explode('|', $configDetail[2]);
+			$subLevelConfig = Array();
+			$levelId = $configDetail[0];
+			$subLevelConfig['vip_name'] = $configDetail[1];
+			$subLevelConfig['discount'] = $configDetail[3];
+			$subLevelConfig['rule'] = Array();
+			foreach($ruleList as $rule)
+			{
+				$opt = '>';
+				if(strpos($rule, '>=') != false) $opt = '>=';
+				if(strpos($rule, '==') != false) $opt = '==';
+				$items = explode($opt, $rule);
+				if(count($items) == 2)
+				{
+					$subLevelConfig['rule'][$items[0]] = ['value'=> $items[1], 'opt'=> $opt];
+				}
+			}
+			$levelConfig[$levelId] = $subLevelConfig;
+		}
+		return $levelConfig;
+	}
+
+	public static function updateVipLevel($uid, $event, $value)
+	{
+        $userInfo = User::getUserInfo($uid);
+		$levelConfig = getVipLevelConfig();
+		$maxLevelId = 0;
+		foreach($levelConfig as $levelId => $config)
+		{
+			if(array_key_exists($event, $config['rule']))
+			{
+				if($config['rule'][$event]['opt'] == '>' && $value <= $config['rule'][$event]['value']) break;
+				if($config['rule'][$event]['opt'] == '>=' && $value < $config['rule'][$event]['value']) break;
+				if($config['rule'][$event]['opt'] == '==' && $value != $config['rule'][$event]['value']) break;
+
+				$maxLevelId = $levelId;
+			}
+		}
+		if($userInfo['level'] >= $maxLevelId) return true;
+		return User::where('uid', $uid)->update(['level'=> $maxLevelId]);
+	}
 }

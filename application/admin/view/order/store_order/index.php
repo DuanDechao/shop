@@ -17,13 +17,13 @@
                                             <span v-if="item.count!=undefined" :class="item.class!=undefined ? 'layui-badge': 'layui-badge layui-bg-gray' ">{{item.count}}</span></button>
                                     </div>
                                 </div>
-                                <div class="layui-col-lg12">
+                                <!--<div class="layui-col-lg12">
                                     <label class="layui-form-label">订单类型:</label>
                                     <div class="layui-input-block" v-cloak="">
                                         <button class="layui-btn layui-btn-sm" :class="{'layui-btn-primary':where.type!=item.value}" @click="where.type = item.value" type="button" v-for="item in orderType">{{item.name}}
                                             <span v-if="item.count!=undefined" class="layui-badge layui-bg-gray">{{item.count}}</span></button>
                                     </div>
-                                </div>
+                                </div> -->
                                 <div class="layui-col-lg12">
                                     <label class="layui-form-label">创建时间:</label>
                                     <div class="layui-input-block" data-type="data" v-cloak="">

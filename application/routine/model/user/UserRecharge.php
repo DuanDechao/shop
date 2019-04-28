@@ -55,6 +55,7 @@ class UserRecharge extends ModelBasic
         $res3 = User::edit(['now_money'=>bcadd($user['now_money'],$order['price'],2)],$order['uid'],'uid');
         $res = $res1 && $res2 && $res3;
         self::checkTrans($res);
-        return $res;
+		$resUpdateLvl = User::updateVipLevel($order['uid'], 'recharge', $order['price']); 
+        return $res && $resUpdateLvl;
     }
 }

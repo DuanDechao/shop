@@ -256,6 +256,7 @@
                 {field: 'uid', title: '编号', width:'6%',event:'uid'},
                 {field: 'avatar', title: '头像', event:'open_image', width: '6%', templet: '<p><img class="avatar" style="cursor: pointer" class="open_image" data-image="{{d.avatar}}" src="{{d.avatar}}" alt="{{d.nickname}}"></p>'},
                 {field: 'nickname', title: '姓名'},
+                {field: 'level', title: 'VIP'},
                 {field: 'now_money', title: '余额',width:'6%',sort:true,event:'now_money'},
                 {field: 'pay_count', title: '购买次数',align:'center',width:'6%'},
                 {field: 'extract_count_price', title: '累计提现',align:'center',width:'6%'},

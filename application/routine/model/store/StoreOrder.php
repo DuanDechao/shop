@@ -29,6 +29,7 @@ use service\WechatService;
 use service\RoutineTemplateService;
 use think\Cache;
 use think\Url;
+use think\Log;
 use traits\ModelTrait;
 
 class StoreOrder extends ModelBasic
@@ -164,7 +165,7 @@ class StoreOrder extends ModelBasic
         Cache::clear('user_order_'.$uid.$key);
     }
 
-    public static function cacheKeyCreateOrder($uid,$key,$addressId,$payType,$useIntegral = false,$couponId = 0,$mark = '',$combinationId = 0,$pinkId = 0,$seckill_id=0,$bargain_id=0)
+    public static function cacheKeyCreateOrder($uid,$key,$addressId,$payType,$useIntegral = false,$couponId = 0,$mark = '',$combinationId = 0,$pinkId = 0,$seckill_id=0,$bargain_id=0,$vip_level=0,$useCondBounty=false,$useFullBounty=false)
     {
         if(!array_key_exists($payType,self::$payType)) return self::setErrorInfo('选择支付方式有误!');
         if(self::be(['unique'=>$key,'uid'=>$uid])) return self::setErrorInfo('请勿重复提交订单');
@@ -201,7 +202,10 @@ class StoreOrder extends ModelBasic
         if((isset($other['offlinePostage'])  && $other['offlinePostage'] && $payType == 'offline')) $payPostage = 0;
         $payPrice = bcadd($payPrice,$payPostage,2);
 
-        //积分抵扣
+		//积分抵扣
+		$deductionPrice = 0;
+        $usedIntegral = 0;
+		/*
         $res2 = true;
         if($useIntegral && $userInfo['integral'] > 0){
             $deductionPrice = bcmul($userInfo['integral'],$other['integralRatio'],2);
@@ -220,7 +224,92 @@ class StoreOrder extends ModelBasic
             $deductionPrice = 0;
             $usedIntegral = 0;
         }
-        if(!$res2) return self::setErrorInfo('使用积分抵扣失败!');
+		if(!$res2) return self::setErrorInfo('使用积分抵扣失败!');
+		*/
+		//满减金抵扣
+		$res3 = true;
+		$condBountyUseRule = SystemConfigService::get('condition_bounty_use_rule');
+		$useRegisterBounty = 0;
+		$useSpreadBounty = 0;
+		if($useCondBounty && $condBountyUseRule != '' && $payPrice > 0 && ($userInfo['register_money'] > 0 || $userInfo['spread_money'] > 0))
+		{
+			$condBountyUseRule = str_replace("\r\n", "\n", $condBountyUseRule);
+			$ruleList = explode("\n", $condBountyUseRule);
+			$maxCanUseBounty = 0;
+			foreach($ruleList as $rule)
+			{
+				$items = explode("=", $rule);
+				if(count($items) == 2)
+				{
+					if($priceGroup['totalPrice'] < $items[0]) break;
+					$maxCanUseBounty = $items[1];
+				}
+			}
+			if($userInfo['register_money'] > 0)
+			{
+				$useRegisterBounty = min($userInfo['register_money'], $maxCanUseBounty, $payPrice);
+				if($useRegisterBounty > 0)
+				{
+					$payPrice = bcsub($payPrice, $useRegisterBounty, 2);
+					$res3 = $res3 && UserBill::expend('满减金抵扣', $uid, 'register_money', 'shop', $useRegisterBounty, $key, $userInfo['register_money'], '购买商品使用'.floatval($useRegisterBounty).'注册金抵扣');
+					$res3 = $res3 && User::bcDec($userInfo['uid'], 'register_money', $useRegisterBounty, 'uid');
+				}
+			}
+			if(!$res3) return self::setErrorInfo('使用满减金抵扣失败!');
+			if($userInfo['spread_money'] > 0 && $payPrice > 0)
+			{
+				$useSpreadBounty = min($userInfo['spread_money'], $payPrice, $maxCanUseBounty - $userRegisterBounty);
+				if($useSpreadBounty > 0)
+				{
+					$payPrice = bcsub($payPrice, $useSpreadBounty, 2);
+					$res3 = $res3 && UserBill::expend('满减金抵扣', $uid, 'spread_money', 'shop', $useSpreadBounty, $key, $userInfo['spread_money'], '购买商品使用'.floatval($useSpreadBounty).'推荐金抵扣');
+					$res3 = $res3 && User::bcDec($userInfo['uid'], 'spread_money', $useSpreadBounty, 'uid');
+				}
+			}
+			if(!$res3) return self::setErrorInfo('使用满减金抵扣失败!');
+		}
+
+		//消费金抵扣
+		$res4 = true;
+		$useDistributionBounty = 0;
+		$useRebateBounty = 0;
+		if($useFullBounty && $payPrice > 0 && ($userInfo['distribution_money'] > 0 || $userInfo['rebate_money'] > 0))
+		{
+			if($userInfo['distribution_money'] > 0)
+			{
+				$useDistributionBounty = min($userInfo['distribution_money'], $payPrice);
+				if($useDistributionBounty > 0)
+				{
+					$payPrice = bcsub($payPrice, $useDistributionBounty, 2);
+					$res4 = $res4 && UserBill::expend('消费金抵扣', $uid, 'distribution_money', 'shop', $useDistributionBounty, $key, $userInfo['distribution_money'], '购买商品使用'.floatval($useDistributionBounty).'分销金抵扣');
+					$res4 = $res4 && User::bcDec($userInfo['uid'], 'distribution_money', $useDistributionBounty, 'uid');
+				}
+			}
+			if(!$res4) return self::setErrorInfo('使用消费金抵扣失败!');
+			if($userInfo['rebate_money'] > 0 && $payPrice > 0)
+			{
+				$useRebateBounty = min($userInfo['rebate_money'], $payPrice);
+				if($useRebateBounty > 0)
+				{
+					$payPrice = bcsub($payPrice, $useRebateBounty, 2);
+					$res4 = $res4 && UserBill::expend('消费金抵扣', $uid, 'rebate_money', 'shop', $useRebateBounty, $key, $userInfo['rebate_money'], '购买商品使用'.floatval($useRebateBounty).'返利金抵扣');
+					$res4 = $res4 && User::bcDec($userInfo['uid'], 'rebate_money', $useRebateBounty, 'uid');
+				}
+			}
+			if(!$res4) return self::setErrorInfo('使用消费金抵扣失败!');
+		}
+
+		//会员
+		$levelDiscount = 100;
+		if($vip_level > 0)
+		{
+			$vipLevelConfig = User::getVipLevelConfig();
+			if(array_key_exists($vip_level, $vipLevelConfig))
+			{
+				$levelDiscount = $vipLevelConfig[$vip_level]['discount'];
+				$payPrice = bcmul($payPrice, (float)($levelDiscount / 100), 2);
+			}
+		}
 
         $cartIds = [];
         $totalNum = 0;
@@ -228,7 +317,7 @@ class StoreOrder extends ModelBasic
         foreach ($cartInfo as $cart){
             $cartIds[] = $cart['id'];
             $totalNum += $cart['cart_num'];
-            $gainIntegral = bcadd($gainIntegral,isset($cart['productInfo']['give_integral']) ? : 0,2);
+            //$gainIntegral = bcadd($gainIntegral,isset($cart['productInfo']['give_integral']) ? : 0,2);
         }
         $orderInfo = [
             'uid'=>$uid,
@@ -256,7 +345,12 @@ class StoreOrder extends ModelBasic
             'bargain_id'=>$bargain_id,
             'cost'=>$priceGroup['costPrice'],
             'is_channel'=>1,
-            'unique'=>$key
+			'unique'=>$key,
+			'use_register_money'=>$useRegisterBounty,
+			'use_spread_money'=>$useSpreadBounty,
+			'use_distribution_money'=>$useDistributionBounty,
+			'use_rebate_money'=>$useRebateBounty,
+			'level_discount'=>$levelDiscount,
         ];
         $order = self::set($orderInfo);
         if(!$order)return self::setErrorInfo('订单生成失败!');
@@ -406,8 +500,9 @@ class StoreOrder extends ModelBasic
         if($order->combination_id && $res1 && !$order->refund_status) $resPink = StorePink::createPink($order);//创建拼团
         $oid = self::where('order_id',$orderId)->value('id');
         StoreOrderStatus::status($oid,'pay_success','用户付款成功');
-        RoutineTemplate::sendOrderSuccess($formId,$orderId);
-        $res = $res1 && $resPink;
+		RoutineTemplate::sendOrderSuccess($formId,$orderId);
+		$resUpdateLvl = User::updateVipLevel($order['uid'], 'consume', $order['pay_price']); 
+        $res = $res1 && $resPink && $resUpdateLvl;
         return false !== $res;
     }
 

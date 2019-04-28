@@ -8,6 +8,7 @@ use service\UploadService as Upload;
 use service\UtilService as Util;
 use think\Request;
 use think\Url;
+use think\Log;
 use app\admin\model\system\SystemGroup as GroupModel;
 use app\admin\model\system\SystemGroupData as GroupDataModel;
 use app\admin\controller\AuthController;
@@ -52,7 +53,7 @@ class SystemGroupData extends AuthController
                 $params = explode("\n",$value["param"]);
                 if(is_array($params) && !empty($params)){
                     foreach ($params as $index => $v) {
-                        $vl = explode('=>',$v);
+                        $vl = explode('=',$v);
                         if(!empty($vl[0]) && !empty($vl[1])){
                             $info[$index]["value"] = $vl[0];
                             $info[$index]["label"] = $vl[1];
@@ -61,6 +62,8 @@ class SystemGroupData extends AuthController
                 }
             }
 
+			Log::write(var_export($value, true), "rrrrrrrrrrrrrrrrrr");
+			Log::write(var_export($info, true), "ttttttttttttttttttt");
             switch ($value["type"]){
                 case 'input':
                     $f[] = Form::input($value["title"],$value["name"]);
@@ -78,7 +81,7 @@ class SystemGroupData extends AuthController
                     $f[] = Form::select($value["title"],$value["name"],$info[0])->options($info)->multiple(false);
                     break;
                 case 'upload':
-                    $f[] = Form::frameImageOne($value["title"],$value["name"],Url::build('admin/widget.images/index',array('fodder'=>$value["title"],'big'=>1)))->icon('image');
+                    $f[] = Form::frameImageOne($value["title"],$value["name"],Url::build('admin/widget.images/index',array('fodder'=>$value["title"],'big'=>1)))->icon('image')->spin(0);
                     break;
                 case 'uploads':
                     $f[] = Form::frameImages($value["title"],$value["name"],Url::build('admin/widget.images/index',array('fodder'=>$value["title"],'big'=>1)))->maxLength(5)->icon('images')->width('100%')->height('550px')->spin(0);
@@ -184,7 +187,7 @@ class SystemGroupData extends AuthController
                      }else{
                          $image = '';
                      }
-                     $f[] = Form::frameImageOne($value['title'],$value['name'],Url::build('admin/widget.images/index',array('fodder'=>$value['title'],'big'=>1)),$image)->icon('image');
+                     $f[] = Form::frameImageOne($value['title'],$value['name'],Url::build('admin/widget.images/index',array('fodder'=>$value['title'],'big'=>1)),$image)->icon('image')->spin(0);
                     break;
                  case 'uploads':
                      $images = !empty($fvalue) ? $fvalue:[];

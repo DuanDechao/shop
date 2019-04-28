@@ -145,7 +145,7 @@ class StoreProduct extends AuthController
             Form::input('store_info','产品简介')->type('textarea'),
             Form::input('keyword','产品关键字')->placeholder('多个用英文状态下的逗号隔开'),
             Form::input('unit_name','产品单位','件'),
-            Form::frameImageOne('image','产品主图片(305*305px)',Url::build('admin/widget.images/index',array('fodder'=>'image')))->icon('image')->width('100%')->height('550px'),
+            Form::frameImageOne('image','产品主图片(305*305px)',Url::build('admin/widget.images/index',array('fodder'=>'image')))->icon('image')->width('100%')->height('550px')->spin(0),
             Form::frameImages('slider_image','产品轮播图(640*640px)',Url::build('admin/widget.images/index',array('fodder'=>'slider_image')))->maxLength(5)->icon('images')->width('100%')->height('550px')->spin(0),
             Form::number('price','产品售价')->min(0)->col(8),
             Form::number('ot_price','产品市场价')->min(0)->col(8),

@@ -1,8 +1,9 @@
 <?php
 namespace app\routine\controller;
-use behavior\wechat\PaymentBehavior;
+use behavior\routine\PaymentBehavior;
 use service\HookService;
 use service\RoutineNotify;
+use think\Log;
 
 
 /**
@@ -18,6 +19,7 @@ class Routine
     public function notify()
     {
         $result = RoutineNotify::notify();
+		Log::record('PayNotify:'.var_export($result, true), 'info');
         if($result) HookService::listen('wechat_pay_success_'.strtolower($result['attach']),$result['out_trade_no'],$result,true,PaymentBehavior::class);
     }
 }

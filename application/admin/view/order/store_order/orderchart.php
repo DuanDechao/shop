@@ -28,6 +28,7 @@
                                 <button type="button" class="btn btn-outline btn-link" data-value="-2">已退款</button>
                                 <input class="search-item-value" type="hidden" name="status" value="{$where.status}" />
                             </div>
+							<!--
                             <div class="search-item" data-name="combination_id">
                                 <span>订单类型：</span>
                                 <button type="button" class="btn btn-outline btn-link" data-value="">全部</button>
@@ -36,6 +37,7 @@
                                 <button type="button" class="btn btn-outline btn-link" data-value="秒杀订单">秒杀订单</button>
                                 <input class="search-item-value" type="hidden" name="combination_id" value="{$where.combination_id}" />
                             </div>
+							-->
                             <div class="search-item" data-name="data">
                                 <span>创建时间：</span>
                                 <!--                                <button type="button" class="btn btn-outline btn-link" data-value="">全部</button>-->
