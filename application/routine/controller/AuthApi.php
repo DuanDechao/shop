@@ -98,6 +98,7 @@ class AuthApi extends AuthController{
         $banner = GroupDataService::getData('routine_home_banner')?:[];//banner图
         $menus = GroupDataService::getData('routine_home_menus')?:[];//banner图
         $lovely = GroupDataService::getData('routine_lovely')?:[];//猜你喜欢图
+        $popup = GroupDataService::getData('routine_home_popup')?:[];//猜你喜欢图
         $best = StoreProduct::getBestProduct('id,image,store_name,cate_id,price,unit_name,sort',8);//精品推荐
         $new = StoreProduct::getNewProduct('id,image,store_name,cate_id,price,unit_name,sort',3);//首发
         $hot = StoreProduct::getHotProduct('id,image,store_name,cate_id,price,unit_name,sort',8);//热卖
@@ -111,6 +112,7 @@ class AuthApi extends AuthController{
         $data['hot'] = $hot;
         $data['benefit'] = $benefit;
         $data['like'] = $like;
+        $data['popup'] = $popup;
         return JsonService::successful($data);
     }
 
@@ -237,10 +239,11 @@ class AuthApi extends AuthController{
         }
         if(!empty($keyword)) $model->where('keyword|store_name','LIKE',htmlspecialchars("%$keyword%"));
         if($news!=0) $model->where('is_new',1);
+		$model->field('ficti + sales as show_sales');
         $baseOrder = '';
         if($priceOrder) $baseOrder = $priceOrder == 'desc' ? 'price DESC' : 'price ASC';
 //        if($salesOrder) $baseOrder = $salesOrder == 'desc' ? 'sales DESC' : 'sales ASC';//真实销量
-        if($salesOrder) $baseOrder = $salesOrder == 'desc' ? 'ficti DESC' : 'ficti ASC';//虚拟销量
+        if($salesOrder) $baseOrder = $salesOrder == 'desc' ? 'show_sales DESC' : 'show_sales ASC';//虚拟和真实销量
         if($baseOrder) $baseOrder .= ', ';
         $model->order($baseOrder.'sort DESC, add_time DESC');
         $list = $model->limit($first,$limit)->field('id,store_name,cate_id,image,sales,ficti,price,stock')->select()->toArray();

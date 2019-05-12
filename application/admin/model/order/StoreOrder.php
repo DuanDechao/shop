@@ -936,8 +936,8 @@ HTML;
             if($formId){
                 RoutineFormId::delFormIdOne($formId);
                 RoutineTemplateService::sendTemplate($routine_openid,
-                    RoutineTemplateService::setTemplateId(RoutineTemplateService::ORDER_DELIVER_SUCCESS),
-                    '',
+                    RoutineTemplateService::ORDER_DELIVER_SUCCESS,
+                    '/pages/orders-con/orders-con?order_id='.$order['order_id'],
                     $data,
                     $formId);
             }
@@ -951,13 +951,34 @@ HTML;
             if($formId){
                 RoutineFormId::delFormIdOne($formId);
                 RoutineTemplateService::sendTemplate($routine_openid,
-                    RoutineTemplateService::setTemplateId(RoutineTemplateService::ORDER_POSTAGE_SUCCESS),
-                    '',
+                    RoutineTemplateService::ORDER_POSTAGE_SUCCESS,
+                    '/pages/orders-con/orders-con?order_id='.$order['order_id'],
                     $data,
                     $formId);
             }
         }
     }
+
+    public static function refundOrderGoods($oid = 0,$postageData=array()){
+        if(!$oid || !$postageData) return true;
+        $order = self::where('id',$oid)->find();
+        $routine_openid = WechatUser::uidToRoutineOpenid($order['uid']);
+        if(!$routine_openid) return true;
+        $data['keyword1']['value'] =  $order['order_id'];
+        $data['keyword2']['value'] =  date('Y-m-d H:i:s',time());
+        $data['keyword3']['value'] =  $postageData['refund_price'];
+        $data['keyword4']['value'] =  '原路退回';
+        $data['keyword5']['value'] =  '您的订单已经成功退款';
+        $formId = RoutineFormId::getFormIdOne($order['uid']);
+        if($formId){
+            RoutineFormId::delFormIdOne($formId);
+            RoutineTemplateService::sendTemplate($routine_openid,
+            RoutineTemplateService::ORDER_REFUND_SUCCESS,
+            '/pages/orders-con/orders-con?order_id='.$order['order_id'],
+            $data,
+            $formId);
+        }
+	}
 
 
     /**

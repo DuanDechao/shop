@@ -10,6 +10,7 @@ namespace app\routine\model\user;
 use basic\ModelBasic;
 use service\RoutineService;
 use traits\ModelTrait;
+use app\routine\model\user\UserNotice;
 
 class UserRecharge extends ModelBasic
 {
@@ -56,6 +57,11 @@ class UserRecharge extends ModelBasic
         $res = $res1 && $res2 && $res3;
         self::checkTrans($res);
 		$resUpdateLvl = User::updateVipLevel($order['uid'], 'recharge', $order['price']); 
-        return $res && $resUpdateLvl;
+        $res = $res && $resUpdateLvl;
+		if($res)
+		{
+			UserNotice::addSystemNotice($order['uid'], '充值消息', sprintf('您已成功充值%f元', $order['price']));
+		}
+		return $res;
     }
 }

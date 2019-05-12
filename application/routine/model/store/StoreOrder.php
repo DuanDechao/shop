@@ -594,8 +594,24 @@ class StoreOrder extends ModelBasic
         if($order['_status']['_type'] != 0 && $order['_status']['_type']!= -2 && $order['_status']['_type'] != 4)
             return self::setErrorInfo('该订单无法删除!');
         if(false !== self::edit(['is_del'=>1],$order['id'],'id') &&
-            false !==StoreOrderStatus::status($order['id'],'remove_order','删除订单'))
-            return true;
+			false !==StoreOrderStatus::status($order['id'],'remove_order','删除订单')){
+
+			//还原库存和销量数据
+			$res = true;
+			if($order['_status']['_type'] == 0 || $order['_status']['_type'] == -2)
+			{
+				$cart_ids = $order['cart_id'];
+				foreach($cart_ids as $cart)
+				{
+					$cartInfo = StoreCart::where('id', $cart)->field('product_id, product_attr_unique, cart_num')->select()->toArray();
+					if(count($cartInfo) != 1)
+						continue;
+
+					$res = $res && StoreProduct::incProductStock($cartInfo[0]['cart_num'], $cartInfo[0]['product_id'], $cartInfo[0]['product_attr_unique']);
+				}	
+			}
+            return $res;
+		}
         else
             return self::setErrorInfo('订单删除失败!');
     }

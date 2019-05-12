@@ -31,7 +31,7 @@ class OrderBehavior
      * $oid  string store_order表中的id
      */
     public static function storeProductOrderDeliveryAfter($data,$oid){
-        StoreOrder::orderPostageAfter($oid,$data);
+        //StoreOrder::orderPostageAfter($oid,$data);
         StoreOrder::sendOrderGoods($oid,$data);
     }
 
@@ -43,7 +43,7 @@ class OrderBehavior
      * $oid  string store_order表中的id
      */
     public static function storeProductOrderDeliveryGoodsAfter($data,$oid){
-        StoreOrder::orderPostageAfter($oid,$data);
+        //StoreOrder::orderPostageAfter($oid,$data);
         StoreOrder::sendOrderGoods($oid,$data);
     }
 
@@ -56,7 +56,8 @@ class OrderBehavior
      * $oid  string store_order表中的id
      */
     public static function storeProductOrderRefundYAfter($data,$oid){
-       StoreOrder::refundTemplate($data,$oid);
+       //StoreOrder::refundTemplate($data,$oid);
+	   StoreOrder::refundOrderGoods($oid, $data);
     }
 
     /**

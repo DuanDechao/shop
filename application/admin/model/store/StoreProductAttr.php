@@ -85,7 +85,10 @@ class StoreProductAttr extends ModelBasic
                 'price'=>$value['price'],
                 'cost'=>$value['cost'],
                 'stock'=>$value['sales'],
-                'image'=>$value['pic']
+                'image'=>$value['pic'],
+                'metal_diff'=>$value['metal_diff'],
+                'metal_weight'=>$value['metal_weight'],
+                'price_type'=>$value['price_type']
             ];
         }
         if(!count($attrGroup) || !count($valueGroup)) return self::setErrorInfo('请设置至少一个属性!');

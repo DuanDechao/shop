@@ -121,6 +121,15 @@ class RoutineTemplateService{
         }catch (\Exception $e){
             return false;
         }
-
     }
+
+	public static function sendCustomerMessage($data){
+		try{
+			$accessToken = RoutineServer::get_access_token();
+			$url = "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=".$accessToken;
+			return json_decode(RoutineServer::curlPost($url, json_encode($data, JSON_UNESCAPED_UNICODE)));
+        }catch (\Exception $e){
+            return false;
+        }
+	}
 }

@@ -101,7 +101,7 @@
 
         <template v-if="items[0].value!='' && items[0].detail.length>0 && attrs.length">
             <template v-for="(attr,index) in attrs">
-                <Form-Item>
+                <Form-Item style="width: 100%;">
                     <Row>
                         <template v-for="(item,index) in attr.detail">
                             <i-Col span="3" style="margin-right: 2px">
@@ -109,15 +109,32 @@
                             </i-Col>
                         </template>
                         <i-Col span="4">
-                            <span :class="attr.check ? 'check':''">金额:</span>&nbsp;&nbsp;<i-Input placeholder="金额" v-model="attr.price" style="width: 60%"
+                            <span :class="attr.check ? 'check':''">金额:</span>&nbsp;&nbsp;<i-Input placeholder="金额" v-model="attr.price" style="width: 80%"
                                      :number="true"></i-Input>
                         </i-Col>
                         <i-Col span="4">
-                            <span :class="attr.check ? 'check':''">库存:</span>&nbsp;&nbsp;<i-Input placeholder="库存" v-model="attr.sales" style="width: 60%"
+                            <span :class="attr.check ? 'check':''">定价类型:</span>&nbsp;&nbsp;<i-Select placeholder="类型" v-model="attr.price_type" style="width: 80%"
+									 :number="true"><i-option value="0">固定价</i-option>
+                  <i-option value="1">黄金</i-option>
+				  <i-option value="2">铂金</i-option>
+				  <i-option value="3">钯金</i-option>
+				  <i-option value="4">白银</i-option>
+							</i-Select>
+                        </i-Col>
+                        <i-Col span="4">
+                            <span :class="attr.check ? 'check':''">金属差价(/g):</span>&nbsp;&nbsp;<i-Input placeholder="金属差价" v-model="attr.metal_diff" style="width: 80%"
+                                     :number="true"></i-Input>
+                        </i-Col>
+                        <i-Col span="4">
+                            <span :class="attr.check ? 'check':''">金属克数:</span>&nbsp;&nbsp;<i-Input placeholder="金属克数" v-model="attr.metal_weight" style="width: 80%"
+                                     :number="true"></i-Input>
+                        </i-Col>
+                        <i-Col span="4">
+                            <span :class="attr.check ? 'check':''">库存:</span>&nbsp;&nbsp;<i-Input placeholder="库存" v-model="attr.sales" style="width: 80%"
                                                                                                   :number="true"></i-Input>
                         </i-Col>
                         <i-Col span="4">
-                            <span :class="attr.check ? 'check':''">成本价:</span>&nbsp;&nbsp;<i-Input placeholder="成本价" v-model="attr.cost" style="width: 60%"
+                            <span :class="attr.check ? 'check':''">成本价:</span>&nbsp;&nbsp;<i-Input placeholder="成本价" v-model="attr.cost" style="width: 80%"
                                                                                                    :number="true"></i-Input>
                         </i-Col>
                         <i-Col span="2" offset="1" style="margin-right: 2px">

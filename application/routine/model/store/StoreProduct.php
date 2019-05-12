@@ -21,9 +21,24 @@ class StoreProduct extends ModelBasic
         return json_decode($value,true)?:[];
     }
 
-    public static function getValidProduct($productId,$field = '*')
+	public static function getValidProduct($productId,$field = '*')
     {
-        return self::where('is_del',0)->where('is_show',1)->where('id',$productId)->field($field)->find();
+		$item = self::where('is_del',0)->where('is_show',1)->where('id',$productId)->field($field)->find();
+		$attrStock = self::getStock($item['id']);
+		$attrSales = self::getSales($item['id']);
+        $item['stock'] = $attrStock>0?$attrStock:$item['stock'];//库存
+		$item['sales'] = $attrSales>0?$attrSales:$item['sales']; 
+        return $item;
+    }
+    //获取库存数量
+    public static function getStock($productId)
+    {
+        return StoreProductAttr::storeProductAttrValueDb()->where(['product_id'=>$productId])->sum('stock');
+    }
+    //获取总销量
+    public static function getSales($productId)
+    {
+        return StoreProductAttr::storeProductAttrValueDb()->where(['product_id'=>$productId])->sum('sales');
     }
 
     public static function validWhere()
@@ -106,7 +121,13 @@ class StoreProduct extends ModelBasic
             ->where('is_show',1)->field($field)
             ->order('sort DESC, id DESC');
         if($limit) $model->limit($limit);
-        return $model->select();
+		return $model->select()->each(function($e){
+		    return $e['stock'] = self::getStock($e['id']);
+		});
+		//for($res as $key => $val){
+		//	$res[$key]['stock'] = self::getStock($val['id']);
+		//}
+		//return $res;
     }
 
     public static function cateIdBySimilarityProduct($cateId,$field='*',$limit = 0)
@@ -142,6 +163,17 @@ class StoreProduct extends ModelBasic
             $res = $res && self::where('id',$productId)->setInc('sales',$num);
         }else{
             $res = false !== self::where('id',$productId)->dec('stock',$num)->inc('sales',$num)->update();
+        }
+        return $res;
+    }
+	
+	public static function incProductStock($num,$productId,$unique = '')
+    {
+        if($unique){
+            $res = false !== StoreProductAttrValuemodel::incProductAttrStock($productId,$unique,$num);
+            //$res = $res && self::where('id',$productId)->setInc('sales',$num);
+        }else{
+            $res = false !== self::where('id',$productId)->inc('stock',$num)->dec('sales',$num)->update();
         }
         return $res;
     }

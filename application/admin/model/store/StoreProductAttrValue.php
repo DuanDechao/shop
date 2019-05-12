@@ -33,6 +33,12 @@ class StoreProductAttrValue extends ModelBasic
         return false !== self::where('product_id',$productId)->where('unique',$unique)
             ->dec('stock',$num)->inc('sales',$num)->update();
     }
+	
+	public static function incProductAttrStock($productId,$unique,$num)
+    {
+        return false !== self::where('product_id',$productId)->where('unique',$unique)
+            ->inc('stock',$num)->dec('sales',$num)->update();
+    }
 
 
     public static function uniqueId($key)

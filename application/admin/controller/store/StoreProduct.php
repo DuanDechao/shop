@@ -21,6 +21,8 @@ use app\admin\model\ump\StoreSeckill as StoreSeckillModel;
 use app\admin\model\order\StoreOrder as StoreOrderModel;
 use app\admin\model\ump\StoreBargain as StoreBargainModel;
 use app\admin\model\system\SystemAttachment;
+use think\Log;
+use think\Db;
 
 
 /**
@@ -132,6 +134,11 @@ class StoreProduct extends AuthController
     {
 //        $this->assign(['title'=>'添加产品','action'=>Url::build('save'),'rules'=>$this->rules()->getContent()]);
 //        return $this->fetch('public/common_form');
+		$metalLabels = array();
+		$metalPrices = Db::name('MetalPrice')->field('id, name')->select();
+		foreach($metalPrices as $levelId => $metalPrice){
+			array_push($metalLabels, ['value'=>$metalPrice['id'], 'label'=> $metalPrice['name']]);
+		}
         $field = [
             Form::select('cate_id','产品分类')->setOptions(function(){
                 $list = CategoryModel::getTierList();
@@ -147,8 +154,12 @@ class StoreProduct extends AuthController
             Form::input('unit_name','产品单位','件'),
             Form::frameImageOne('image','产品主图片(305*305px)',Url::build('admin/widget.images/index',array('fodder'=>'image')))->icon('image')->width('100%')->height('550px')->spin(0),
             Form::frameImages('slider_image','产品轮播图(640*640px)',Url::build('admin/widget.images/index',array('fodder'=>'slider_image')))->maxLength(5)->icon('images')->width('100%')->height('550px')->spin(0),
+			Form::select('price_type','定价类型')->options($metalLabels)->col(8),
             Form::number('price','产品售价')->min(0)->col(8),
             Form::number('ot_price','产品市场价')->min(0)->col(8),
+            Form::number('metal_diff','金属差价(/g)')->min(0)->col(8),
+            Form::number('ot_metal_diff','市场金属差价(/g)')->min(0)->col(8),
+            Form::number('metal_weight','金器克数')->min(0)->col(8),
             Form::number('give_integral','赠送积分')->min(0)->precision(0)->col(8),
             Form::number('postage','邮费')->min(0)->col(Form::col(8)),
             Form::number('sales','销量')->min(0)->precision(0)->col(8),
@@ -203,8 +214,12 @@ class StoreProduct extends AuthController
             ['image',[]],
             ['slider_image',[]],
             'postage',
+			'price_type',
             'ot_price',
-            'price',
+			'price',
+			'metal_diff',
+			'ot_metal_diff',
+			'metal_weight',
             'sort',
             'stock',
             'sales',
@@ -226,8 +241,8 @@ class StoreProduct extends AuthController
 //        if(!$data['keyword']) return Json::fail('请输入产品关键字');
         if(count($data['image'])<1) return Json::fail('请上传产品图片');
         if(count($data['slider_image'])<1) return Json::fail('请上传产品轮播图');
-        if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
-        if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品市场价');
+        //if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
+        //if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品市场价');
         if($data['postage'] == '' || $data['postage'] < 0) return Json::fail('请输入邮费');
         if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
         if($data['cost'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品成本价');
@@ -265,6 +280,11 @@ class StoreProduct extends AuthController
         if(!$id) return $this->failed('数据不存在');
         $product = ProductModel::get($id);
         if(!$product) return Json::fail('数据不存在!');
+		$metalLabels = array();
+		$metalPrices = Db::name('MetalPrice')->field('id, name')->select();
+		foreach($metalPrices as $levelId => $metalPrice){
+			array_push($metalLabels, ['value'=>$metalPrice['id'], 'label'=> $metalPrice['name']]);
+		}
         $form = Form::create(Url::build('update',array('id'=>$id)),[
             Form::select('cate_id','产品分类',explode(',',$product->getData('cate_id')))->setOptions(function(){
                 $list = CategoryModel::getTierList();
@@ -280,8 +300,12 @@ class StoreProduct extends AuthController
             Form::input('unit_name','产品单位',$product->getData('unit_name')),
             Form::frameImageOne('image','产品主图片(305*305px)',Url::build('admin/widget.images/index',array('fodder'=>'image')),$product->getData('image'))->icon('image')->width('100%')->height('550px'),
             Form::frameImages('slider_image','产品轮播图(640*640px)',Url::build('admin/widget.images/index',array('fodder'=>'slider_image')),json_decode($product->getData('slider_image'),1))->maxLength(5)->icon('images')->width('100%')->height('550px'),
+			Form::select('price_type','定价类型',$product->getData('price_type'))->options($metalLabels)->filterable(1)->multiple(1)->col(8),
             Form::number('price','产品售价',$product->getData('price'))->min(0)->precision(2)->col(8),
             Form::number('ot_price','产品市场价',$product->getData('ot_price'))->min(0)->col(8),
+            Form::number('metal_diff','金属差价(/g)',$product->getData('metal_diff'))->min(0)->col(8),
+            Form::number('ot_metal_diff','市场金属差价(/g)',$product->getData('ot_metal_diff'))->min(0)->col(8),
+            Form::number('metal_weight','金器克数',$product->getData('metal_weight'))->min(0)->col(8),
             Form::number('give_integral','赠送积分',$product->getData('give_integral'))->min(0)->precision(0)->col(8),
             Form::number('postage','邮费',$product->getData('postage'))->min(0)->col(8),
             Form::number('sales','销量',$product->getData('sales'))->min(0)->precision(0)->col(8),
@@ -320,9 +344,13 @@ class StoreProduct extends AuthController
             ['unit_name','件'],
             ['image',[]],
             ['slider_image',[]],
-            'postage',
+			'postage',
+			'price_type',
             'ot_price',
             'price',
+			'metal_diff',
+			'ot_metal_diff',
+			'metal_weight',
             'sort',
             'stock',
             'sales',
@@ -388,6 +416,9 @@ class StoreProduct extends AuthController
                         $attrFormat[$k]['sales'] = $vv['sales'];
                         $attrFormat[$k]['pic'] = $vv['pic'];
                         $attrFormat[$k]['check'] = false;
+                        $attrFormat[$k]['metal_diff'] = $vv['metal_diff'];
+                        $attrFormat[$k]['metal_weight'] = $vv['metal_weight'];
+                        $attrFormat[$k]['price_type'] = $vv['price_type'];
                         break;
                     }else{
                         $attrFormat[$k]['cost'] = $product['cost'];
@@ -395,6 +426,9 @@ class StoreProduct extends AuthController
                         $attrFormat[$k]['sales'] = '';
                         $attrFormat[$k]['pic'] = $product['image'];
                         $attrFormat[$k]['check'] = true;
+                        $attrFormat[$k]['metal_diff'] = $product['metal_diff'];
+                        $attrFormat[$k]['metal_weight'] = $product['metal_weight'];
+                        $attrFormat[$k]['price_type'] = $product['price_type'];
                     }
                 }
             }
@@ -405,6 +439,9 @@ class StoreProduct extends AuthController
                 $attrFormat[$k]['sales'] = $product['stock'];
                 $attrFormat[$k]['pic'] = $product['image'];
                 $attrFormat[$k]['check'] = false;
+                $attrFormat[$k]['metal_diff'] = $product['metal_diff'];
+                $attrFormat[$k]['metal_weight'] = $product['metal_weight'];
+                $attrFormat[$k]['price_type'] = $product['price_type'];
             }
         }
         return Json::successful($attrFormat);

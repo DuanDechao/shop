@@ -54,4 +54,17 @@ class UserNotice extends ModelBasic
             UserNoticeSee::set($data);
         }
     }
+
+	public static function addSystemNotice($uid, $title, $content)
+	{
+		$data['type'] = 1;
+		$data['uid'] = ','.$uid.',';
+		$data['user'] = '系统';
+		$data['title'] = $title;
+		$data['content']= $content;
+		$data['add_time'] = time();
+		$data['send_time'] = time();
+		$data['is_send'] = 1; 
+		UserNotice::set($data);
+	}
 }

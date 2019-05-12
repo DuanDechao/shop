@@ -215,12 +215,12 @@
                                 </a>
                             </li>
                             {{# }else if(d.pay_price != d.refund_price){ }}
+                            {{# } ;}}
                             <li>
                                 <a href="javascript:void(0);" onclick="$eb.createModalFrame('退款','{:Url('refund_y')}?id={{d.id}}',{w:400,h:300})">
                                     <i class="fa fa-history"></i>立即退款
                                 </a>
                             </li>
-                            {{# } ;}}
                             <li>
                                 <a href="javascript:void(0);" onclick="$eb.createModalFrame('不退款','{:Url('refund_n')}?id={{d.id}}',{w:400,h:300})">
                                     <i class="fa fa-openid"></i> 不退款

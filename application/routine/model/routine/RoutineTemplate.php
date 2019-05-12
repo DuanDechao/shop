@@ -5,6 +5,7 @@ use app\routine\model\store\StoreOrder;
 use app\routine\model\user\RoutineUser;
 use app\routine\model\user\WechatUser;
 use service\RoutineTemplateService;
+use think\Log;
 
 /**
  * 小程序模板消息
@@ -26,7 +27,7 @@ class RoutineTemplate{
         else if($order['pay_type'] == 'offline') $data['keyword4']['value'] =  '线下支付';
         $data['keyword5']['value'] = '已成功退款';
         RoutineFormId::delFormIdOne($formId);
-        RoutineTemplateService::sendTemplate(WechatUser::getOpenId($order['uid']),RoutineTemplateService::setTemplateId(RoutineTemplateService::ORDER_REFUND_SUCCESS),'',$data,$formId);
+        RoutineTemplateService::sendTemplate(WechatUser::getOpenId($order['uid']), RoutineTemplateService::ORDER_REFUND_SUCCESS,'',$data,$formId);
     }
     /**
      * 用户申请退款给管理员发送消息
@@ -40,11 +41,14 @@ class RoutineTemplate{
         $data['keyword3']['value'] =  date('Y-m-d H:i:s',time());
         $data['keyword4']['value'] =  $order['pay_price'];
         $data['keyword5']['value'] =  '原路返回';
+		Log::write(var_export($adminList, true), "lllllllllllllll");
         foreach ($adminList as $uid){
             $formId = RoutineFormId::getFormIdOne($order['uid']);
+			Log::write($order['uid'], "lllllllllllllll111111111");
+			Log::write($formId, "lllllllllllllll222222222");
             if($formId){
                 RoutineFormId::delFormIdOne($formId);
-                RoutineTemplateService::sendTemplate(WechatUser::getOpenId($uid),RoutineTemplateService::setTemplateId(RoutineTemplateService::ORDER_REFUND_STATUS),'',$data,$formId);
+                RoutineTemplateService::sendTemplate(WechatUser::getOpenId($uid), RoutineTemplateService::ORDER_REFUND_STATUS,'',$data,$formId);
             }
         }
     }
@@ -64,7 +68,7 @@ class RoutineTemplate{
         $formId = RoutineFormId::getFormIdOne($bargainUserId);
         if($formId){
             $dataFormId['formId'] = $formId;
-            RoutineTemplateService::sendTemplate(WechatUser::getOpenId($bargainUser['uid']),RoutineTemplateService::setTemplateId(RoutineTemplateService::BARGAIN_SUCCESS),'',$data,$formId);
+            RoutineTemplateService::sendTemplate(WechatUser::getOpenId($bargainUser['uid']),RoutineTemplateService::BARGAIN_SUCCESS,'',$data,$formId);
         }
     }
     /**
@@ -84,7 +88,7 @@ class RoutineTemplate{
         else if($order['pay_type'] == 'weixin') $data['keyword5']['value'] =  '微信支付';
 //        else if($order['pay_type'] == 'offline') $data['keyword5']['value'] =  '线下支付';
         RoutineFormId::delFormIdOne($formId);
-        RoutineTemplateService::sendTemplate(WechatUser::getOpenId($order['uid']),RoutineTemplateService::setTemplateId(RoutineTemplateService::ORDER_PAY_SUCCESS),'',$data,$formId);
+        RoutineTemplateService::sendTemplate(WechatUser::getOpenId($order['uid']), RoutineTemplateService::ORDER_PAY_SUCCESS,'/pages/orders-con/orders-con?order_id='.$orderId,$data,$formId);
     }
 
 }
