@@ -10,12 +10,12 @@ class RoutineCode{
      * @param array $color 二维码线条颜色
      * @return mixed
      */
-    public static function getCode($uid = 0,$imgUrl = '',$color = array(),$page = '',$thirdType = 'spread'){
+    public static function getCode($uid = 0,$imgUrl = '',$color = array(),$page = '',$thirdType = 'spread', $product_id=0){
         $accessToken = RoutineServer::get_access_token();
-        $res = RoutineQrcode::setRoutineQrcodeForever($uid,$thirdType,$page,$imgUrl);
+        $res = RoutineQrcode::setRoutineQrcodeForever($uid,$thirdType,$page,$imgUrl, $product_id);
         if($res){
             $url = "https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=".$accessToken;
-            if($uid) $data['scene'] = $res->id;
+            if($uid) $data['scene'] = $uid;
             else $data['scene'] = 0;
             if(empty($color)){
                 $color['r'] = 0;

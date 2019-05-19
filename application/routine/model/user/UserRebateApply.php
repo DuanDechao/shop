@@ -24,13 +24,14 @@ class UserRebateApply extends ModelBasic
     //   return time();
    // }
 
-    public static function applyRebate($uid, $order_id,$platform,$consume_price = 0)
+    public static function applyRebate($uid, $order_id,$platform,$consume_price = 0, $rebate_price = 0)
     {
         //return self::set(compact('uid','order_id','platform','consume_price'));
 		$insertData['uid'] = $uid;
 		$insertData['order_id'] = $order_id;
 		$insertData['platform'] = $platform;
 		$insertData['consume_price'] = $consume_price;
+		$insertData['rebate_price'] = $rebate_price;
 		$insertData['apply_time'] = time();
 		$insertData['state'] = 0;
         return self::set($insertData);

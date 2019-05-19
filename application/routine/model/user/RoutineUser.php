@@ -35,17 +35,19 @@ class RoutineUser extends ModelBasic
         $routineInfo['unionid'] = $routine['unionid'];//用户在开放平台的唯一标识符
         $routineInfo['user_type'] = 'routine';//用户类型
         $page = '';//跳转小程序的页面
-        $spid = 0;//绑定关系uid
+        //$spid = 0;//绑定关系uid
         //获取是否有扫码进小程序
-        if($routine['spid']){
-            $info = RoutineQrcode::getRoutineQrcodeFindType($routine['spid']);
-            if($info){
-                $spid = $info['third_id'];
-                $page = $info['page'];
-            }
-        }
+        //if($routine['spid']){
+        //    $info = RoutineQrcode::getRoutineQrcodeFindType($routine['spid']);
+        //    if($info){
+        //        $spid = $info['third_id'];
+        //        $page = $info['page'];
+        //    }
+       // }
+		$spid = $routine['spid'];
         //  判断unionid  存在根据unionid判断
 		$is_new_user = 0;
+		$is_bind_spreader = 0;
         if($routineInfo['unionid'] != '' && WechatUser::be(['unionid'=>$routineInfo['unionid']])){
             WechatUser::edit($routineInfo,$routineInfo['unionid'],'unionid');
             $uid = WechatUser::where('unionid',$routineInfo['unionid'])->value('uid');
@@ -53,7 +55,13 @@ class RoutineUser extends ModelBasic
         }else if(WechatUser::be(['routine_openid'=>$routineInfo['routine_openid']])){ //根据小程序openid判断
             WechatUser::edit($routineInfo,$routineInfo['routine_openid'],'routine_openid');
             $uid = WechatUser::where('routine_openid',$routineInfo['routine_openid'])->value('uid');
-            User::updateWechatUser($routineInfo,$uid);
+			$spread_uid = User::where('uid', $uid)->value('spread_uid');
+			$routineInfo['spid'] = $spread_uid;
+			if($spread_uid == 0 && $spid != 0 && $spid != $uid){
+			   $routineInfo['spid'] = $spid;
+			   $is_bind_spreader = 1;
+			} 
+            User::updateWechatUser($routineInfo, $uid);
         }else{
             $routineInfo['add_time'] = time();//用户添加时间
             $routineInfo = WechatUser::set($routineInfo);
@@ -67,6 +75,7 @@ class RoutineUser extends ModelBasic
         $data['uid'] = $uid;
 		$data['spid'] = $spid;
 		$data['is_new_user'] = $is_new_user;
+		$data['is_bind_spreader'] = $is_bind_spreader;
         return $data;
     }
 

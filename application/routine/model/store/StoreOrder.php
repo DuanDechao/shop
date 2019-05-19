@@ -251,18 +251,18 @@ class StoreOrder extends ModelBasic
 				if($useRegisterBounty > 0)
 				{
 					$payPrice = bcsub($payPrice, $useRegisterBounty, 2);
-					$res3 = $res3 && UserBill::expend('满减金抵扣', $uid, 'register_money', 'shop', $useRegisterBounty, $key, $userInfo['register_money'], '购买商品使用'.floatval($useRegisterBounty).'注册金抵扣');
+					$res3 = $res3 && UserBill::expend('注册金', $uid, 'register_money', 'shop', $useRegisterBounty, $key, $userInfo['register_money'], '购买商品使用'.floatval($useRegisterBounty).'注册金抵扣');
 					$res3 = $res3 && User::bcDec($userInfo['uid'], 'register_money', $useRegisterBounty, 'uid');
 				}
 			}
 			if(!$res3) return self::setErrorInfo('使用满减金抵扣失败!');
 			if($userInfo['spread_money'] > 0 && $payPrice > 0)
 			{
-				$useSpreadBounty = min($userInfo['spread_money'], $payPrice, $maxCanUseBounty - $userRegisterBounty);
+				$useSpreadBounty = min($userInfo['spread_money'], $payPrice, $maxCanUseBounty - $useRegisterBounty);
 				if($useSpreadBounty > 0)
 				{
 					$payPrice = bcsub($payPrice, $useSpreadBounty, 2);
-					$res3 = $res3 && UserBill::expend('满减金抵扣', $uid, 'spread_money', 'shop', $useSpreadBounty, $key, $userInfo['spread_money'], '购买商品使用'.floatval($useSpreadBounty).'推荐金抵扣');
+					$res3 = $res3 && UserBill::expend('推荐金', $uid, 'spread_money', 'shop', $useSpreadBounty, $key, $userInfo['spread_money'], '购买商品使用'.floatval($useSpreadBounty).'推荐金抵扣');
 					$res3 = $res3 && User::bcDec($userInfo['uid'], 'spread_money', $useSpreadBounty, 'uid');
 				}
 			}
@@ -281,7 +281,7 @@ class StoreOrder extends ModelBasic
 				if($useDistributionBounty > 0)
 				{
 					$payPrice = bcsub($payPrice, $useDistributionBounty, 2);
-					$res4 = $res4 && UserBill::expend('消费金抵扣', $uid, 'distribution_money', 'shop', $useDistributionBounty, $key, $userInfo['distribution_money'], '购买商品使用'.floatval($useDistributionBounty).'分销金抵扣');
+					$res4 = $res4 && UserBill::expend('分销金', $uid, 'distribution_money', 'shop', $useDistributionBounty, $key, $userInfo['distribution_money'], '购买商品使用'.floatval($useDistributionBounty).'分销金抵扣');
 					$res4 = $res4 && User::bcDec($userInfo['uid'], 'distribution_money', $useDistributionBounty, 'uid');
 				}
 			}
@@ -292,7 +292,7 @@ class StoreOrder extends ModelBasic
 				if($useRebateBounty > 0)
 				{
 					$payPrice = bcsub($payPrice, $useRebateBounty, 2);
-					$res4 = $res4 && UserBill::expend('消费金抵扣', $uid, 'rebate_money', 'shop', $useRebateBounty, $key, $userInfo['rebate_money'], '购买商品使用'.floatval($useRebateBounty).'返利金抵扣');
+					$res4 = $res4 && UserBill::expend('返利金', $uid, 'rebate_money', 'shop', $useRebateBounty, $key, $userInfo['rebate_money'], '购买商品使用'.floatval($useRebateBounty).'返利金抵扣');
 					$res4 = $res4 && User::bcDec($userInfo['uid'], 'rebate_money', $useRebateBounty, 'uid');
 				}
 			}
@@ -773,13 +773,21 @@ class StoreOrder extends ModelBasic
 
     public static function searchUserOrder($uid,$order_id)
     {
-        $order = self::where('uid',$uid)->where('order_id',$order_id)->where('is_del',0)->field('seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,delivery_type')
+        $order = self::where('uid',$uid)->where('order_id',$order_id)->where('is_del',0)->field('seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,delivery_type, pink_id')
             ->order('add_time DESC')->find();
         if(!$order)
             return false;
         else
             return self::tidyOrder($order->toArray(),true);
+    }
 
+    public static function searchUserOrderById($id)
+    {
+        $order = self::where('id',$id)->where('is_del',0)->field('seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,delivery_type, pink_id')->order('add_time DESC')->find();
+        if(!$order)
+            return false;
+        else
+            return self::tidyOrder($order->toArray(),true);
     }
 
     public static function orderOver($oid)

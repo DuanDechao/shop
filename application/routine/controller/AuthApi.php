@@ -164,7 +164,7 @@ class AuthApi extends AuthController{
      * @return \think\response\Json
      */
     public function get_pid_cate(){
-        $data = StoreCategory::pidByCategory(0,'id,cate_name');//一级分类
+        $data = StoreCategory::pidByCategory(0,'id,cate_name, pic');//一级分类
         return JsonService::successful($data);
     }
     /**
@@ -192,6 +192,16 @@ class AuthApi extends AuthController{
         $dataCate = array_merge_recursive($dataCateA,$dataCateE);
         return JsonService::successful($dataCate);
     }
+
+	public function get_sub_cate(Request $request){
+        $data = UtilService::postMore([['id',0]],$request);
+        $dataCateA = [];
+        $dataCateE = StoreCategory::pidBySidList($data['id']);//根据一级分类获取二级分类
+        if($dataCateE) $dataCateE = $dataCateE->toArray();
+        $dataCate = [];
+        $dataCate = array_merge_recursive($dataCateA,$dataCateE);
+        return JsonService::successful($dataCate);
+	}
     /**
      * 分类页面产品
      * @param string $keyword
@@ -810,6 +820,40 @@ class AuthApi extends AuthController{
         return JsonService::successful($list);
     }
 
+	public function get_user_nowmoney_detail()
+	{
+		$time1 = UserBill::where('uid', $this->userInfo['uid'])->where('category', 'now_money')->limit(1)->select()->toArray();
+		$monarr = array();
+		if(count($time1) > 0){
+			$time1 = $time1[0]['add_time'];
+			$monarr[] = date('Y-m',$time1); // 当前月;  
+			while(($time1 = strtotime('+1 month', $time1)) <= time()){  
+		      $monarr[] = date('Y-m',$time1); // 取得递增月;   
+			}
+		}
+		$monthTotal = [];
+		foreach($monarr as $k =>$v){
+			$startTime = strtotime($v.'-01');
+			$endTime = strtotime('+1 month', $startTime);
+			$gainSum = UserBill::where('uid', $this->userInfo['uid'])->where('category', 'now_money')->where('add_time','>=',$startTime)->where('add_time','<', $endTime)->where('pm', 1)->sum('number');
+			$deduceSum = UserBill::where('uid', $this->userInfo['uid'])->where('category', 'now_money')->where('add_time','>=',$startTime)->where('add_time','<', $endTime)->where('pm', 0)->sum('number');
+			$monthTotal[$v]['gainSum'] = sprintf("%.2f",$gainSum);
+			$monthTotal[$v]['deduceSum'] = sprintf("%.2f",$deduceSum);
+		}
+		return JsonService::successful($monthTotal);
+	}
+
+	public function get_user_nowmoney_detail_cart($first = 0, $limit = 8)
+	{
+		$list = UserBill::where('uid', $this->userInfo['uid'])->where('category', 'now_money')->order('add_time DESC')->limit($first,$limit)->select()->toArray();
+		foreach($list as $k => $v){
+			$list[$k]['alias_cart_info'] = StoreOrder::searchUserOrderById($v['alias_id']);
+			$list[$k]['add_time'] = date('Y-m-d H:i:s',$v['add_time']);
+			$list[$k]['time_idx'] = date('Y-m',$v['add_time']);
+		}
+		return JsonService::successful($list);
+	}
+
     /**
      * 订单详情页
      * @param string $order_id
@@ -942,13 +986,30 @@ class AuthApi extends AuthController{
      * @param int $limit
      * @return \think\response\Json
      */
-    public function user_balance_list($category='now_money',$first = 0,$limit = 8)
+    public function user_balance_list($category='now_money', $first = 0,$limit = 8, $pm = 1)
     {
-        $list = UserBill::where('uid',$this->userInfo['uid'])->where('category', $category)
-            ->field('mark,pm,number,add_time')
+        $list = UserBill::where('uid',$this->userInfo['uid'])->where('pm', $pm)->where('category', $category)
+            ->field('mark,number,alias_id,title, add_time, pm, link_id')
             ->where('status',1)->order('add_time DESC')->limit($first,$limit)->select()->toArray();
         foreach ($list as &$v){
-            $v['add_time'] = date('Y/m/d H:i',$v['add_time']);
+            $v['add_time'] = date('Y-m-d',$v['add_time']);
+			if($pm == 0 && $v['link_id']){
+				$v['alias_order_id'] = StoreOrder::where('unique', $v['link_id'])->value('order_id');
+			}
+			else if($pm == 1 && $v['alias_id'] > 0 && $category == 'rebate_money'){
+				$info = UserRebateApply::where('id', $v['alias_id'])->field('order_id, platform')->select()->toArray();
+				if(count($info) > 0){
+					$v['alias_order_id'] = $info[0]['order_id'];
+					$v['alias_platform'] = $info[0]['platform'];
+				}
+			}
+			else if($pm == 1 && $v['alias_id'] > 0 && ($category == 'spread_money' || $category == 'distribution_money' || $category=='register_money')){
+				$info = User::where('uid', $v['alias_id'])->field('avatar, nickname')->select()->toArray();
+				if(count($info) > 0){
+					$v['alias_avatar'] = $info[0]['avatar'];
+					$v['alias_nickname'] = $info[0]['nickname'];
+				}
+			}
         }
         return JsonService::successful($list);
     }
@@ -992,7 +1053,13 @@ class AuthApi extends AuthController{
 		if(count($list) > 0 && ($list[0]['uid'] != $this->userInfo['uid'] || $list[0]['state'] != 2)){
 			return JsonService::fail("重复申请");
 		}
-		$res = UserRebateApply::applyRebate($this->userInfo['uid'], $data['order_id'], $data['platform'], $data['consume_price']);	
+		$platformsDiscount = UserRebateApply::getRebateApplyPlatforms();
+		$discount = 100;
+		if(array_key_exists($data['platform'], $platformsDiscount)){
+			$discount = $platformsDiscount[$data['platform']];
+		}
+		$rebate_bounty = $data['consume_price'] * (float)($discount / 100);
+		$res = UserRebateApply::applyRebate($this->userInfo['uid'], $data['order_id'], $data['platform'], $data['consume_price'], $rebate_bounty);	
 		if($res) return JsonService::successful("申请成功");
 		else return JsonService::fail("申请失败");
 	}
@@ -1102,7 +1169,8 @@ class AuthApi extends AuthController{
         $list = User::where('spread_uid',$this->userInfo['uid'])->field('uid,nickname,avatar,add_time')->limit($first,$limit)->order('add_time DESC')->select()->toArray();
         foreach ($list as $k=>$user){
             $list[$k]['add_time'] = date('Y/m/d',$user['add_time']);
-            $list[$k]['price'] = StoreOrder::getUserPrice($user['uid']);
+			$sumPrice = UserBill::sumPrice($this->userInfo['uid'], $user['uid'], 'distribution_money');
+            $list[$k]['price'] = $sumPrice == NULL ? 0 : $sumPrice;
         }
         $count = User::where('spread_uid',$this->userInfo['uid'])->field('uid,nickname,avatar,add_time')->count();
         $data['count'] = $count;
@@ -1121,7 +1189,8 @@ class AuthApi extends AuthController{
         $list = User::where('spread_uid',$two_uid)->field('uid,nickname,avatar,add_time')->limit($first,$limit)->order('add_time DESC')->select()->toArray();
         foreach ($list as $k=>$user){
             $list[$k]['add_time'] = date('Y/m/d',$user['add_time']);
-            $list[$k]['price'] = StoreOrder::getUserPrice($user['uid']);
+			$sumPrice = UserBill::sumPrice($this->userInfo['uid'], $user['uid'], 'distribution_money');
+            $list[$k]['price'] = $sumPrice == NULL ? 0 : $sumPrice;
         }
         $count = User::where('spread_uid',$two_uid)->field('uid,nickname,avatar,add_time')->count();
         $data['count'] = $count;
@@ -1406,7 +1475,7 @@ class AuthApi extends AuthController{
         $sum = array_sum($price);
         return JsonService::successful(['cont'=>$cont,'sum'=>$sum]);
     }
-	
+
 	public function rebateApplylist($first = 0, $limit = 8)
 	{
         $request = Request::instance();
@@ -1537,6 +1606,8 @@ class AuthApi extends AuthController{
      */
     public function spread_uid(Request $request){
         $data = UtilService::postMore(['spread_uid',0],$request);
+		if($data['spread_uid'] == $this->userInfo['uid'])
+            return JsonService::successful('不能绑定自己');
         if($data['spread_uid']){
             if(!$this->userInfo['spread_uid']){
 				$info = RoutineQrcode::getRoutineQrcodeFindType($data['spread_uid']);
@@ -2057,11 +2128,14 @@ class AuthApi extends AuthController{
         $domain = SystemConfigService::get('site_url').'/';
         if(!file_exists($codePath)){
             if(!is_dir($path)) mkdir($path,0777,true);
-            $res = RoutineCode::getCode($this->userInfo['uid'],$codePath,[],'/pages/product-con/index?id='.$id,'product_spread');
+            $res = RoutineCode::getCode($this->userInfo['uid'],$codePath,[],'/pages/product-con/index?id='.$id,'product_spread', $id);
             if($res) file_put_contents($codePath,$res);
             else return JsonService::fail('二维码生成失败');
         }
-        return JsonService::successful($domain.$codePath);
+		//$res['code_id'] = RoutineQrcode::where('third_id', $this->userInfo['uid'])->where('product_id', $id)->value('id');
+		$res['code_path'] = $domain.$codePath;
+
+        return JsonService::successful($res);
     }
 
 

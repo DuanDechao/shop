@@ -28,6 +28,7 @@ class User extends ModelBasic
         return self::edit([
             'nickname'=>$wechatUser['nickname']?:'',
             'avatar'=>$wechatUser['headimgurl']?:'',
+			'spread_uid'=>$wechatUser['spid']?:0,
             'last_time'=>time(),
             'last_ip'=>Request::instance()->ip(),
         ],$uid,'uid');
@@ -111,7 +112,7 @@ class User extends ModelBasic
         if($brokeragePrice <= 0) return true;
         $mark = $userInfo['nickname'].'成功消费'.floatval($orderInfo['pay_price']).'元,奖励推广佣金'.floatval($brokeragePrice);
         self::beginTrans();
-        $res1 = UserBill::income('获得推广佣金',$userInfo['spread_uid'],'distribution_money','brokerage',$brokeragePrice,$orderInfo['id'],0,$mark);
+        $res1 = UserBill::income('分销金',$userInfo['spread_uid'],'distribution_money','brokerage',$brokeragePrice,$orderInfo['id'],0,$mark, 1, $orderInfo['uid']);
         $res2 = self::bcInc($userInfo['spread_uid'],'distribution_money',$brokeragePrice,'uid');
         $res = $res1 && $res2;
         self::checkTrans($res);
@@ -140,7 +141,7 @@ class User extends ModelBasic
         if($brokeragePrice <= 0) return true;
         $mark = '二级推广人'.$userInfo['nickname'].'成功消费'.floatval($orderInfo['pay_price']).'元,奖励推广佣金'.floatval($brokeragePrice);
         self::beginTrans();
-        $res1 = UserBill::income('获得推广佣金',$userInfoTwo['spread_uid'],'distribution_money','brokerage',$brokeragePrice,$orderInfo['id'],0,$mark);
+        $res1 = UserBill::income('获得推广佣金',$userInfoTwo['spread_uid'],'distribution_money','brokerage',$brokeragePrice,$orderInfo['id'],0,$mark, 1, $orderInfo['uid']);
         $res2 = self::bcInc($userInfoTwo['spread_uid'],'distribution_money',$brokeragePrice,'uid');
         $res = $res1 && $res2;
         self::checkTrans($res);

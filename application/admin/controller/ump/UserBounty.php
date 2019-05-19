@@ -98,14 +98,7 @@ class UserBounty extends AuthController
         if(!$id) return Json::fail('数据不存在!');
         $apply = UserRebateApplyModel::get($id)->toArray();
         if(!$apply) return Json::fail('数据不存在!');
-		$platformsDiscount = RoutineUserRebateApplyModel::getRebateApplyPlatforms();
-		$discount = 100;
-		if(array_key_exists($apply['platform'], $platformsDiscount))
-		{
-			$discount = $platformsDiscount[$apply['platform']];
-		}
-		$rebate_bounty = $apply['consume_price'] * (float)($discount / 100);
-		$res = UserRebateApplyModel::giveUserRebateBounty($id, $apply['uid'], $rebate_bounty);
+		$res = UserRebateApplyModel::giveUserRebateBounty($id, $apply['uid'], $apply['rebate_price']);
         return Json::successful($res ? '成功':'失败');
 	}
 

@@ -89,7 +89,7 @@ class StoreCategory extends AuthController
                 return $menus;
             })->filterable(1),
             Form::input('cate_name','分类名称'),
-            Form::frameImageOne('pic','分类图标',Url::build('admin/widget.images/index',array('fodder'=>'pic')))->icon('image'),
+            Form::frameImageOne('pic','分类图标',Url::build('admin/widget.images/index',array('fodder'=>'pic')))->icon('image')->spin(0),
             Form::number('sort','排序'),
             Form::radio('is_show','状态',1)->options([['label'=>'显示','value'=>1],['label'=>'隐藏','value'=>0]])
         ];
@@ -163,7 +163,7 @@ class StoreCategory extends AuthController
                 return $menus;
             })->filterable(1),
             Form::input('cate_name','分类名称',$c->getData('cate_name')),
-            Form::frameImageOne('pic','分类图标',Url::build('admin/widget.images/index',array('fodder'=>'pic')),$c->getData('pic'))->icon('image'),
+            Form::frameImageOne('pic','分类图标',Url::build('admin/widget.images/index',array('fodder'=>'pic')),$c->getData('pic'))->icon('image')->spin(0),
             Form::number('sort','排序',$c->getData('sort')),
             Form::radio('is_show','状态',$c->getData('is_show'))->options([['label'=>'显示','value'=>1],['label'=>'隐藏','value'=>0]])
         ];

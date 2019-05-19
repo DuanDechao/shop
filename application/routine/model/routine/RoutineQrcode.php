@@ -20,7 +20,7 @@ class RoutineQrcode extends ModelBasic {
      * @param int $thirdId
      * @return object
      */
-    public static function setRoutineQrcodeForever($thirdId = 0,$thirdType = 'spread',$page = '',$imgUrl = ''){
+    public static function setRoutineQrcodeForever($thirdId = 0,$thirdType = 'spread',$page = '',$imgUrl = '', $product_id = 0){
        $data['third_type'] = $thirdType;
        $data['third_id'] = $thirdId;
        $data['status'] = 0;
@@ -28,6 +28,7 @@ class RoutineQrcode extends ModelBasic {
        $data['page'] = $page;
        $data['url_time'] = '';
        $data['qrcode_url'] = $imgUrl;
+       $data['product_id'] = $product_id;
        return self::set($data);
     }
 

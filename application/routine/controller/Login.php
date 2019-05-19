@@ -37,11 +37,15 @@ class Login extends Controller{
         $data['page'] = $dataOauthInfo['page'];
 		$data['is_new_user'] = $dataOauthInfo['is_new_user'];
 		$data['spid'] = $dataOauthInfo['spid'];
+		$data['is_bind_spreader'] = $dataOauthInfo['is_bind_spreader'];
         $data['status'] = RoutineUser::isUserStatus($data['uid']);
 		if($data['is_new_user']){
 			WechatUser::userFirstSubGiveCoupon($data['uid']);
-			if($data['spid'] != 0) WechatUser::spreaderGiveCoupon($data['spid']);
+			if($data['spid'] != 0 && $data['spid'] != $data['uid']) WechatUser::spreaderGiveCoupon($data['spid']);
 			UserBounty::giveUserRegisterBounty($data['uid'], $data['spid']);
+		}
+		else if($data['is_bind_spreader']){
+			UserBounty::giveUserBindSpreaderBounty($data['uid'], $data['spid']);
 		}
         return JsonService::successful($data);
     }

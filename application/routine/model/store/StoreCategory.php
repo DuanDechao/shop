@@ -19,9 +19,18 @@ class StoreCategory extends ModelBasic
         return $model->select();
     }
 
-    public static function pidBySidList($pid)
+	public static function pidBySidList($pid)
+	{
+		return self::where('pid',$pid)->field('id,cate_name,pid,pic')->select();
+	}
+
+    public static function pidBySidList1($pid)
     {
-        return self::where('pid',$pid)->field('id,cate_name,pid')->select();
+        $cates = self::where('pid',$pid)->where('is_show',1)->field('id,cate_name,pid,pic')->select()->toArray();
+		foreach($cates as $k => $v){
+			$cates[$k]['child'] = self::pidBySidList($v['id']);
+		}
+		return $cates;
     }
 
     public static function cateIdByPid($cateId)

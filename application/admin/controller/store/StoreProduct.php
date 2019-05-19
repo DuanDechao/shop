@@ -214,7 +214,7 @@ class StoreProduct extends AuthController
             ['image',[]],
             ['slider_image',[]],
             'postage',
-			'price_type',
+			['price_type',[]],
             'ot_price',
 			'price',
 			'metal_diff',
@@ -235,14 +235,23 @@ class StoreProduct extends AuthController
             ['is_postage',0],
         ],$request);
         if(count($data['cate_id']) < 1) return Json::fail('请选择产品分类');
+        if(count($data['price_type']) < 1) return Json::fail('请选择定价类型');
+		$data['price_type'] = $data['price_type'][0];
         $data['cate_id'] = implode(',',$data['cate_id']);
         if(!$data['store_name']) return Json::fail('请输入产品名称');
 //        if(!$data['store_info']) return Json::fail('请输入产品简介');
 //        if(!$data['keyword']) return Json::fail('请输入产品关键字');
         if(count($data['image'])<1) return Json::fail('请上传产品图片');
         if(count($data['slider_image'])<1) return Json::fail('请上传产品轮播图');
-        //if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
-        //if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品市场价');
+		if($data['price_type'] == 0){
+			if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
+			if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品市场价');
+		}
+		else{
+			if($data['metal_diff'] == '' || $data['metal_diff'] < 0) return Json::fail('请输入金属差价');
+			if($data['ot_metal_diff'] == '' || $data['ot_metal_diff'] < 0) return Json::fail('请输入市场金属差价');
+			if($data['metal_weight'] == '' || $data['metal_weight'] < 0) return Json::fail('请输入金属克数');
+		}
         if($data['postage'] == '' || $data['postage'] < 0) return Json::fail('请输入邮费');
         if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
         if($data['cost'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品成本价');
@@ -345,7 +354,7 @@ class StoreProduct extends AuthController
             ['image',[]],
             ['slider_image',[]],
 			'postage',
-			'price_type',
+			['price_type',[]],
             'ot_price',
             'price',
 			'metal_diff',
@@ -366,6 +375,8 @@ class StoreProduct extends AuthController
             ['is_postage',0],
         ],$request);
         if(count($data['cate_id']) < 1) return Json::fail('请选择产品分类');
+        if(count($data['price_type']) < 1) return Json::fail('请选择定价类型');
+		$data['price_type'] = $data['price_type'][0];
         $data['cate_id'] = implode(',',$data['cate_id']);
         if(!$data['store_name']) return Json::fail('请输入产品名称');
 //        if(!$data['store_info']) return Json::fail('请输入产品简介');
@@ -373,8 +384,15 @@ class StoreProduct extends AuthController
         if(count($data['image'])<1) return Json::fail('请上传产品图片');
         if(count($data['slider_image'])<1) return Json::fail('请上传产品轮播图');
         if(count($data['slider_image'])>5) return Json::fail('轮播图最多5张图');
-        if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
-        if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品市场价');
+		if($data['price_type'] == 0){
+			if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
+			if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品市场价');
+		}
+		else{
+			if($data['metal_diff'] == '' || $data['metal_diff'] < 0) return Json::fail('请输入金属差价');
+			if($data['ot_metal_diff'] == '' || $data['ot_metal_diff'] < 0) return Json::fail('请输入市场金属差价');
+			if($data['metal_weight'] == '' || $data['metal_weight'] < 0) return Json::fail('请输入金属克数');
+		}
         if($data['postage'] == '' || $data['postage'] < 0) return Json::fail('请输入邮费');
         if($data['cost'] == '' || $data['cost'] < 0) return Json::fail('请输入产品成本价');
         if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
